@@ -1,0 +1,1704 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DOXIT Downloader</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root, body.theme-tiktok {
+            /* TIKTOK THEME */
+            --bg: #09070f;
+            --glass-bg: linear-gradient(135deg, rgba(25, 14, 42, 0.88) 0%, rgba(12, 9, 22, 0.95) 100%);
+            --glass-border: rgba(168, 85, 247, 0.35);
+            --glass-highlight: rgba(168, 85, 247, 0.4);
+            --text-main: #f4f4f5;
+            --text-muted: #9a9ab0;
+            --accent: #c084fc;
+            --accent-hover: #a855f7;
+            --accent-glow: rgba(192, 132, 252, 0.5);
+            --nav-bg: linear-gradient(135deg, rgba(20, 12, 34, 0.92) 0%, rgba(10, 7, 18, 0.96) 100%);
+            --input-bg: rgba(0, 0, 0, 0.6);
+            --badge-bg: #a855f7;
+            --badge-text: #ffffff;
+            --particle-color: 168, 85, 247;
+            --sheen-color: rgba(168, 85, 247, 0.12);
+        }
+
+        /* SPOTIFY THEME */
+        body.theme-spotify {
+            --glass-bg: linear-gradient(135deg, rgba(12, 32, 20, 0.88) 0%, rgba(7, 18, 12, 0.95) 100%);
+            --glass-border: rgba(34, 197, 94, 0.35);
+            --glass-highlight: rgba(34, 197, 94, 0.4);
+            --accent: #4ade80;
+            --accent-hover: #22c55e;
+            --accent-glow: rgba(74, 222, 128, 0.5);
+            --nav-bg: linear-gradient(135deg, rgba(10, 26, 16, 0.92) 0%, rgba(6, 15, 10, 0.96) 100%);
+            --input-bg: rgba(0, 0, 0, 0.6);
+            --badge-bg: #22c55e;
+            --badge-text: #000000;
+            --particle-color: 34, 197, 94;
+            --sheen-color: rgba(34, 197, 94, 0.12);
+        }
+
+        /* ALIGHT MOTION THEME (DARK GLASS ORIGINAL) */
+        body.theme-alightmotion {
+            --glass-bg: linear-gradient(135deg, rgba(10, 28, 36, 0.88) 0%, rgba(6, 18, 24, 0.95) 100%);
+            --glass-border: rgba(6, 182, 212, 0.35);
+            --glass-highlight: rgba(6, 182, 212, 0.4);
+            --accent: #38bdf8;
+            --accent-hover: #06b6d4;
+            --accent-glow: rgba(56, 189, 248, 0.4);
+            --nav-bg: linear-gradient(135deg, rgba(8, 22, 30, 0.92) 0%, rgba(5, 14, 20, 0.96) 100%);
+            --input-bg: rgba(0, 0, 0, 0.6);
+            --badge-bg: #06b6d4;
+            --badge-text: #ffffff;
+            --particle-color: 6, 182, 212;
+            --sheen-color: rgba(6, 182, 212, 0.12);
+        }
+
+        /* MINIMALIST TYPOGRAPHY RESET */
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            -webkit-tap-highlight-color: transparent; 
+            letter-spacing: -0.01em;
+        }
+        
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            display: flex; justify-content: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            transition: background-color 0.5s ease;
+        }
+
+        #bgCanvas {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .ambient-radial {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100vw; height: 100vh;
+            background: radial-gradient(circle at 50% 35%, var(--accent-glow) 0%, transparent 70%);
+            opacity: 0.4;
+            z-index: 0;
+            pointer-events: none;
+            transition: background 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: pulseGlow 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
+            100% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.5; }
+        }
+
+        .app-container {
+            width: 100%; max-width: 480px;
+            padding: 24px 20px 110px;
+            display: flex; flex-direction: column;
+            position: relative; z-index: 2;
+        }
+
+        /* PAGE CONTROL & SMOOTH TRANSITION */
+        .page-section { 
+            display: none; 
+            opacity: 0;
+            transform: translateY(12px) scale(0.98);
+            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .page-section.active { 
+            display: block; 
+            animation: smoothPageIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes smoothPageIn {
+            from { opacity: 0; transform: translateY(14px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        #page-login.active { 
+            display: flex !important; 
+            flex-direction: column; 
+            justify-content: center; 
+            min-height: 85vh; 
+        }
+
+        body.is-login .bottom-nav { display: none !important; }
+        body.is-login .app-container { padding-bottom: 20px; }
+
+        /* UNIVERSAL SMOOTH BUTTONS & INTERACTION */
+        button, a.btn-save, .tab-btn, .nav-item, .custom-checkbox, .btn-eye, .btn-console, .btn-icon-danger {
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
+            user-select: none;
+        }
+        button:active, a.btn-save:active, .tab-btn:active, .nav-item:active, .btn-eye:active, .btn-console:active, .btn-icon-danger:active {
+            transform: scale(0.94) !important;
+            transition: transform 0.12s cubic-bezier(0.25, 1, 0.5, 1) !important;
+        }
+
+        /* GLASS CARD */
+        .glass-card {
+            background: var(--glass-bg) !important;
+            backdrop-filter: blur(28px) saturate(180%);
+            -webkit-backdrop-filter: blur(28px) saturate(180%);
+            border: 1px solid var(--glass-border) !important;
+            box-shadow: 
+                0 30px 60px -12px rgba(0, 0, 0, 0.85),
+                0 18px 36px -18px rgba(0, 0, 0, 0.7),
+                inset 0 1px 1px 0 var(--glass-highlight),
+                inset 0 -1px 3px 0 rgba(0, 0, 0, 0.8),
+                0 0 30px -8px var(--accent-glow);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle at 35% 20%, var(--sheen-color) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* PREMIUM OVERLAY SPLASH LOADER (0-100%) */
+        #splashLoader {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(7, 5, 12, 0.94);
+            backdrop-filter: blur(35px) saturate(200%);
+            -webkit-backdrop-filter: blur(35px) saturate(200%);
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #splashLoader.show {
+            display: flex;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .splash-card {
+            width: 88%; max-width: 360px;
+            padding: 36px 26px;
+            border-radius: 32px;
+            text-align: center;
+            display: flex; flex-direction: column; align-items: center; gap: 16px;
+            box-shadow: 0 30px 70px rgba(0,0,0,0.9), 0 0 50px var(--accent-glow);
+        }
+
+        .splash-percent {
+            font-size: 46px;
+            font-weight: 800;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, #ffffff 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1.5px;
+            line-height: 1;
+            text-shadow: 0 0 25px var(--accent-glow);
+            margin-top: 6px;
+        }
+
+        .splash-progress-track {
+            width: 100%; height: 8px;
+            background: rgba(0, 0, 0, 0.65);
+            border-radius: 99px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        .splash-progress-bar {
+            width: 0%; height: 100%;
+            background: linear-gradient(90deg, var(--accent), #f0abfc);
+            border-radius: 99px;
+            box-shadow: 0 0 16px var(--accent);
+            transition: width 0.04s linear;
+        }
+
+        .splash-status {
+            font-size: 10.5px;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* TIME & DATE WIDGET */
+        .time-widget {
+            border-radius: 22px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .clock-display { display: flex; flex-direction: column; gap: 2px; }
+        .clock-time { font-size: 20px; font-weight: 700; color: var(--text-main); letter-spacing: 0.5px; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.1; }
+        .clock-date { font-size: 10px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.8px; transition: color 0.4s ease; }
+
+        .status-pill {
+            display: flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 99px;
+            background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #4ade80; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+        }
+        .status-dot {
+            width: 6px; height: 6px; border-radius: 50%; background: #22c55e;
+            box-shadow: 0 0 8px #22c55e; animation: blinkDot 1.5s infinite;
+        }
+        @keyframes blinkDot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
+
+        /* LOGIN CARD */
+        .login-box { position: relative; z-index: 2; padding: 34px 24px; border-radius: 28px; }
+        .login-badge {
+            display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 99px;
+            background: rgba(0, 0, 0, 0.4); border: 1px solid var(--glass-border); backdrop-filter: blur(12px);
+            font-size: 10px; font-weight: 700; color: var(--accent); letter-spacing: 1px;
+            text-transform: uppercase; margin-bottom: 22px; box-shadow: inset 0 1px 0 0 var(--glass-highlight); position: relative; z-index: 2;
+        }
+
+        .input-group { margin-bottom: 16px; position: relative; z-index: 2; }
+        .input-group label { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; display: block; letter-spacing: 0.5px; text-transform: uppercase; }
+
+        .login-input-wrapper { position: relative; display: flex; align-items: center; }
+        .login-input-wrapper .input-icon { 
+            position: absolute; left: 16px; width: 19px; height: 19px; 
+            stroke: var(--accent) !important; 
+            fill: none; stroke-width: 2.2; 
+            filter: drop-shadow(0 0 6px var(--accent-glow));
+            opacity: 0.95;
+            transition: stroke 0.3s ease; pointer-events: none; 
+        }
+        
+        .login-input-wrapper input {
+            width: 100%; padding: 16px 48px 16px 48px; background: var(--input-bg);
+            border: 1px solid var(--glass-border); border-radius: 18px; color: var(--text-main); font-size: 14px; font-weight: 400;
+            outline: none; backdrop-filter: blur(16px); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6); transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .login-input-wrapper input:focus { border-color: var(--accent); background: rgba(0, 0, 0, 0.7); box-shadow: 0 0 0 4px var(--accent-glow), inset 0 1px 0 0 var(--glass-highlight); }
+
+        .btn-eye {
+            position: absolute; right: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); color: var(--text-muted);
+            cursor: pointer; padding: 7px; display: flex; align-items: center; justify-content: center; border-radius: 12px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        .btn-eye:hover { color: var(--text-main); background: rgba(255, 255, 255, 0.12); transform: scale(1.05); }
+        .btn-eye svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+        .caps-warning { display: none; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #ef4444; margin-top: 6px; padding-left: 4px; }
+        .login-options { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; margin-bottom: 22px; position: relative; z-index: 2; }
+
+        .custom-checkbox { display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-muted); font-size: 12px; font-weight: 500; user-select: none; }
+        .custom-checkbox input { display: none; }
+        .checkmark { width: 18px; height: 18px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; transition: all 0.25s ease; box-shadow: inset 0 1px 2px rgba(0,0,0,0.5); }
+        .checkmark::after { content: ''; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); display: none; margin-bottom: 2px; }
+        .custom-checkbox input:checked ~ .checkmark { background: var(--accent); border-color: var(--accent); box-shadow: 0 2px 10px var(--accent-glow); }
+        .custom-checkbox input:checked ~ .checkmark::after { display: block; }
+
+        /* HEADER */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px; }
+        .logo-area { display: flex; align-items: center; gap: 12px; }
+        .logo-icon {
+            width: 44px; height: 44px; background: linear-gradient(135deg, var(--accent), rgba(15, 10, 24, 0.95));
+            border-radius: 14px; display: flex; justify-content: center; align-items: center; color: #fff; font-size: 22px; font-weight: 700; font-style: italic;
+            box-shadow: 0 6px 20px var(--accent-glow), inset 0 1px 0 var(--glass-highlight); border: 1px solid var(--glass-border); transition: all 0.4s ease;
+        }
+        .logo-text h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; line-height: 1; font-family: 'Plus Jakarta Sans', sans-serif; }
+        .logo-text p { font-size: 9px; font-weight: 600; color: var(--text-muted); letter-spacing: 1.5px; margin-top: 3px;}
+
+        /* PREMIUM TAB SELECTOR */
+        .tab-selector { display: flex; border-radius: 20px; padding: 5px; margin-bottom: 20px; gap: 5px; }
+        .tab-btn {
+            flex: 1; padding: 12px 8px; border: 1px solid transparent; background: rgba(0, 0, 0, 0.25); color: var(--text-muted); font-size: 12px; font-weight: 600;
+            border-radius: 15px; cursor: pointer;
+            display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 7px; position: relative; z-index: 2;
+        }
+        .tab-btn svg { flex-shrink: 0; transition: all 0.3s ease; }
+
+        .tab-btn.tiktok svg { color: #f0abfc; filter: drop-shadow(0 0 3px rgba(240, 171, 252, 0.4)); }
+        .tab-btn.spotify svg { color: #22c55e; filter: drop-shadow(0 0 3px rgba(34, 197, 94, 0.5)); }
+        .tab-btn.alightmotion svg { 
+            color: #38bdf8; stroke: #38bdf8; stroke-width: 2.6;
+            filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.85)); 
+        }
+
+        .tab-btn:hover { color: var(--text-main); transform: translateY(-1px); }
+        .tab-btn:hover svg { filter: drop-shadow(0 0 8px currentColor); transform: scale(1.08); }
+
+        .tab-btn.active.tiktok { 
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.35) 0%, rgba(147, 51, 234, 0.2) 100%); 
+            color: #f0abfc; border-color: rgba(168, 85, 247, 0.6); 
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.35), inset 0 1px 1px var(--glass-highlight); 
+        }
+        .tab-btn.active.spotify { 
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.35) 0%, rgba(22, 163, 74, 0.2) 100%); 
+            color: #86efac; border-color: rgba(34, 197, 94, 0.6); 
+            box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35), inset 0 1px 1px var(--glass-highlight); 
+        }
+        .tab-btn.active.alightmotion { 
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.35) 0%, rgba(8, 145, 178, 0.2) 100%); 
+            color: #67e8f9; border-color: rgba(6, 182, 212, 0.6); 
+            box-shadow: 0 6px 20px rgba(6, 182, 212, 0.35), inset 0 1px 1px var(--glass-highlight); 
+        }
+
+        /* INPUT SYSTEM */
+        .input-box { position: relative; margin-bottom: 14px; }
+        .input-box svg { 
+            position: absolute; left: 18px; top: 50%; transform: translateY(-50%); 
+            width: 20px; height: 20px; 
+            stroke: var(--accent) !important; 
+            fill: none; 
+            stroke-width: 2.2; 
+            filter: drop-shadow(0 0 6px var(--accent-glow));
+            opacity: 0.95;
+            transition: all 0.3s ease; 
+            pointer-events: none;
+            z-index: 5;
+        }
+        .input-box input {
+            width: 100%; padding: 17px 18px 17px 52px; background: var(--input-bg); border: 1px solid var(--glass-border);
+            border-radius: 18px; color: var(--text-main); font-size: 13.5px; font-weight: 400; outline: none; backdrop-filter: blur(16px);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.6); transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .input-box input::placeholder { color: var(--text-muted); opacity: 0.8; }
+        .input-box input:focus { border-color: var(--accent); background: rgba(0, 0, 0, 0.7); box-shadow: 0 0 0 4px var(--accent-glow), inset 0 1px 0 0 var(--glass-highlight); }
+
+        /* ULTRA PREMIUM BUTTON SYSTEM */
+        .btn-download {
+            width: 100%; padding: 16px 20px; 
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); 
+            color: var(--badge-text);
+            border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 18px; 
+            font-size: 14px; font-weight: 600; letter-spacing: 0.2px;
+            display: flex; justify-content: center; align-items: center; gap: 10px; 
+            cursor: pointer; 
+            box-shadow: 0 10px 28px -6px var(--accent-glow), inset 0 1px 1px rgba(255, 255, 255, 0.35); 
+            position: relative; z-index: 2; overflow: hidden;
+        }
+        .btn-download::after {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+        .btn-download:hover::after { left: 100%; }
+        .btn-download:hover { transform: translateY(-2px) scale(1.005); box-shadow: 0 14px 32px -4px var(--accent-glow), inset 0 1px 2px rgba(255, 255, 255, 0.4); }
+        .btn-download:disabled { opacity: 0.65; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-download svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+
+        /* SPECIFIC PREMIUM BUTTON VARIANTS */
+        .btn-purple-vip {
+            background: linear-gradient(135deg, #c084fc 0%, #a855f7 100%) !important;
+            color: #ffffff !important; font-weight: 700 !important;
+            border-color: rgba(192, 132, 252, 0.4) !important;
+            box-shadow: 0 10px 28px -6px rgba(168, 85, 247, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+        }
+        .btn-purple-vip:hover { box-shadow: 0 14px 32px -4px rgba(168, 85, 247, 0.65), inset 0 1px 2px rgba(255, 255, 255, 0.5) !important; }
+
+        .btn-green-vip {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+            color: #000000 !important; font-weight: 700 !important;
+            border-color: rgba(74, 222, 128, 0.4) !important;
+            box-shadow: 0 10px 28px -6px rgba(34, 197, 94, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+        }
+        .btn-green-vip:hover { box-shadow: 0 14px 32px -4px rgba(34, 197, 94, 0.65), inset 0 1px 2px rgba(255, 255, 255, 0.5) !important; }
+
+        .btn-blue-vip {
+            background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%) !important;
+            color: #ffffff !important;
+            border-color: rgba(56, 189, 248, 0.35) !important;
+            box-shadow: 0 10px 28px -6px rgba(6, 182, 212, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+        }
+        .btn-blue-vip:hover { box-shadow: 0 14px 32px -4px rgba(6, 182, 212, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.4) !important; }
+
+        /* HEADER SUBTITLE BANNERS */
+        .platform-banner {
+            border-radius: 22px; padding: 18px 20px; margin-bottom: 18px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            position: relative; z-index: 2;
+        }
+        .platform-banner.tiktok {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.22) 0%, rgba(25, 14, 42, 0.85) 100%) !important;
+            border: 1px solid rgba(168, 85, 247, 0.4) !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(240, 171, 252, 0.3);
+        }
+        .platform-banner.spotify {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.22) 0%, rgba(12, 32, 20, 0.85) 100%) !important;
+            border: 1px solid rgba(34, 197, 94, 0.4) !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(134, 239, 172, 0.3);
+        }
+        .platform-banner p { font-size: 13px; font-weight: 500; color: #f4f4f5; line-height: 1.45; }
+
+        /* PROCESS CARDS */
+        .process-card {
+            border-radius: 24px; padding: 22px 20px; margin-bottom: 20px;
+            display: flex; flex-direction: column; gap: 14px; position: relative; z-index: 2;
+        }
+        .card-header-group { display: flex; align-items: center; gap: 10px; }
+        .card-header-group h3 { font-size: 16px; font-weight: 700; color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; }
+        .card-desc-text { font-size: 12px; color: var(--text-muted); line-height: 1.4; margin-top: -6px; }
+
+        /* TERMINAL CONSOLE WIDGET (INSTALL_PROCESS.console) */
+        .console-card {
+            border-radius: 22px; padding: 14px 16px; margin-top: 18px; margin-bottom: 24px;
+            background: rgba(5, 7, 12, 0.95) !important; border: 1px solid var(--glass-border) !important;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8), inset 0 1px 1px var(--glass-highlight);
+            display: flex; flex-direction: column; gap: 10px; position: relative; z-index: 2;
+        }
+        .console-header {
+            display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .console-title-group { display: flex; align-items: center; gap: 8px; }
+        .console-dots { display: flex; gap: 5px; }
+        .console-dot { width: 9px; height: 9px; border-radius: 50%; }
+        .console-dot.red { background: #ef4444; }
+        .console-dot.yellow { background: #eab308; }
+        .console-dot.green { background: #22c55e; }
+        .console-title { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; color: var(--accent); letter-spacing: 0.5px; }
+
+        .console-actions { display: flex; gap: 6px; }
+        .btn-console {
+            background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #e4e4e7; padding: 4px 10px; border-radius: 8px; font-size: 10.5px; font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-console:hover { background: rgba(255, 255, 255, 0.2); border-color: var(--accent); color: #ffffff; }
+
+        .console-body {
+            background: rgba(0, 0, 0, 0.6); border-radius: 12px; padding: 12px; min-height: 90px; max-height: 140px;
+            overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent);
+            line-height: 1.5; border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .console-body pre { font-family: inherit; white-space: pre-wrap; word-break: break-word; }
+
+        .btn-save {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); 
+            color: var(--badge-text); padding: 10px 20px; border-radius: 14px; font-size: 13px; font-weight: 600;
+            text-decoration: none; border: 1px solid rgba(255,255,255,0.22); cursor: pointer;
+            box-shadow: 0 6px 20px var(--accent-glow), inset 0 1px 1px rgba(255,255,255,0.35);
+            display: inline-flex; align-items: center; justify-content: center;
+        }
+        .btn-save:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 10px 25px var(--accent-glow); }
+
+        .btn-icon-danger {
+            color: #ef4444; background: linear-gradient(135deg, rgba(239, 68, 68, 0.18), rgba(185, 28, 28, 0.12));
+            border: 1px solid rgba(239, 68, 68, 0.35); padding: 9px; border-radius: 12px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+        .btn-icon-danger:hover { background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(185, 28, 28, 0.2)); transform: translateY(-1px) scale(1.04); box-shadow: 0 8px 20px rgba(239, 68, 68, 0.35); }
+
+        /* STEP BADGE CIRCLE */
+        .step-num {
+            width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-hover)); color: var(--badge-text);
+            font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 12px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.3); flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* ANIMATED PROCESSING CARD */
+        .processing-card {
+            border-radius: 24px; padding: 22px 18px; display: none; flex-direction: column; align-items: center; gap: 12px; margin-top: 16px; margin-bottom: 24px; text-align: center;
+        }
+        .proc-spinner { width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.75s linear infinite; box-shadow: 0 0 15px var(--accent-glow); }
+        .proc-title { font-size: 13.5px; font-weight: 600; color: var(--text-main); }
+        .proc-sub { font-size: 11px; color: var(--text-muted); margin-top: -6px; }
+        .progress-bar-container { width: 100%; height: 5px; background: rgba(0,0,0,0.5); border-radius: 99px; overflow: hidden; border: 1px solid var(--glass-border); position: relative; }
+        .progress-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent), #e879f9); border-radius: 99px; box-shadow: 0 0 10px var(--accent); transition: width 0.2s ease; }
+
+        /* MEDIA PLAYER & METADATA */
+        .media-card { border-radius: 24px; padding: 18px; display: none; flex-direction: column; gap: 14px; margin-top: 20px; margin-bottom: 24px; }
+        #playerContainer { position: relative; z-index: 2; }
+        #playerContainer video, #playerContainer audio { width: 100%; border-radius: 16px; display: block; }
+
+        .meta-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; position: relative; z-index: 2; }
+        .meta-chip { background: rgba(0, 0, 0, 0.4); border: 1px solid var(--glass-border); padding: 8px 12px; border-radius: 12px; display: flex; flex-direction: column; gap: 2px; }
+        .meta-chip span:first-child { font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .meta-chip span:last-child { font-size: 12px; font-weight: 600; color: var(--accent); }
+
+        .media-footer { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding-top: 4px; }
+        .media-info-text { display: flex; flex-direction: column; gap: 2px; max-width: 65%; }
+        .media-info-text h4 { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .media-info-text p { font-size: 11.5px; color: var(--text-muted); }
+
+        /* DOWNLOAD LIST */
+        .download-list { display: flex; flex-direction: column; gap: 12px; }
+        .download-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 18px; transition: background 0.2s, transform 0.2s; position: relative; z-index: 2; }
+        .download-item:hover { background: rgba(255, 255, 255, 0.05); transform: translateY(-1px); }
+        .dl-thumb { width: 48px; height: 48px; border-radius: 12px; object-fit: cover; background: #222; flex-shrink: 0; }
+        .dl-info { flex: 1; min-width: 0; }
+        .dl-info h4 { font-size: 13px; font-weight: 600; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .dl-info p { font-size: 10.5px; color: var(--text-muted); }
+        
+        .dl-badge { padding: 4px 9px; border-radius: 99px; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+        .dl-badge.tiktok { background: rgba(168, 85, 247, 0.2); color: #e879f9; border: 1px solid rgba(168, 85, 247, 0.35); }
+        .dl-badge.spotify { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.35); }
+        .dl-badge.alightmotion { background: rgba(6, 182, 212, 0.2); color: #67e8f9; border: 1px solid rgba(6, 182, 212, 0.35); }
+
+        /* FLOATING BOTTOM NAV SYSTEM */
+        .bottom-nav {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: calc(100% - 40px); max-width: 440px; height: 64px;
+            border-radius: 22px; background: var(--nav-bg) !important; backdrop-filter: blur(28px) saturate(180%); -webkit-backdrop-filter: blur(28px) saturate(180%);
+            border: 1px solid var(--glass-border); box-shadow: 0 20px 45px rgba(0, 0, 0, 0.8), inset 0 1px 1px var(--glass-highlight);
+            display: none; justify-content: space-around; padding: 0 8px; z-index: 100; align-items: center;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--text-muted); font-size: 10px; font-weight: 600;
+            text-decoration: none; cursor: pointer; background: none; border: 1px solid transparent; width: 31%; height: 48px; border-radius: 16px; 
+            position: relative; z-index: 2;
+        }
+        .nav-item svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2.2; transition: transform 0.3s ease; }
+        .nav-item:hover { color: var(--text-main); transform: translateY(-1px); }
+        .nav-item.active { 
+            color: var(--accent); background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)); 
+            border-color: var(--glass-border); transform: translateY(-1px); 
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), inset 0 1px 0 var(--glass-highlight); 
+        }
+        .nav-item.active svg { transform: scale(1.08); }
+
+        /* PREMIUM TOAST NOTIFICATION */
+        .toast {
+            position: fixed; top: 24px; left: 50%; transform: translateX(-50%) translateY(-120px) scale(0.9); opacity: 0; pointer-events: none;
+            display: flex; align-items: center; gap: 10px; padding: 11px 18px; border-radius: 99px;
+            background: linear-gradient(135deg, rgba(16, 12, 26, 0.95), rgba(8, 6, 14, 0.95)) !important;
+            backdrop-filter: blur(28px) saturate(180%); -webkit-backdrop-filter: blur(28px) saturate(180%); border: 1px solid var(--glass-border) !important;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 20px var(--accent-glow), inset 0 1px 0 var(--glass-highlight); z-index: 1000;
+            transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.35s ease, border-color 0.3s ease;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; pointer-events: auto; }
+        .toast-icon { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.4); color: var(--accent); flex-shrink: 0; box-shadow: inset 0 1px 0 var(--glass-highlight); transition: all 0.3s ease; }
+        .toast-msg { font-size: 12.5px; font-weight: 600; color: var(--text-main); letter-spacing: 0.1px; white-space: nowrap; }
+
+        .toast.error { border-color: rgba(239, 68, 68, 0.5) !important; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(239, 68, 68, 0.35), inset 0 1px 0 rgba(239, 68, 68, 0.3); }
+        .toast.error .toast-icon { color: #ef4444; background: rgba(239, 68, 68, 0.2); }
+
+        .spinner { width: 17px; height: 17px; border: 2px solid rgba(255,255,255,0.3); border-top-color: currentColor; border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="is-login theme-tiktok">
+
+    <canvas id="bgCanvas"></canvas>
+    <div class="ambient-radial"></div>
+
+    <!-- PREMIUM FULLSCREEN SPLASH LOADER 0-100% -->
+    <div id="splashLoader">
+        <div class="splash-card glass-card">
+            <div class="logo-icon" style="width: 52px; height: 52px; font-size: 26px;">D</div>
+            <div class="splash-percent" id="splashPercent">0%</div>
+            <div class="splash-progress-track">
+                <div class="splash-progress-bar" id="splashBar"></div>
+            </div>
+            <div class="splash-status" id="splashStatus">AUTHENTICATING...</div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">
+        <div class="toast-icon" id="toastIcon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+        <span class="toast-msg" id="toastMsg">Notifikasi</span>
+    </div>
+
+    <div class="app-container">
+        
+        <!-- ================= HALAMAN LOGIN ================= -->
+        <div id="page-login" class="page-section active">
+            <div class="login-box glass-card">
+                <div style="text-align: center;">
+                    <div class="login-badge">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        Admin Portal
+                    </div>
+                </div>
+
+                <div class="logo-area" style="justify-content: center; margin-bottom: 26px;">
+                    <div class="logo-icon">D</div>
+                    <div class="logo-text">
+                        <h1>DOXIT</h1>
+                        <p>DOWNLOADER</p>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Username</label>
+                    <div class="login-input-wrapper">
+                        <input type="text" id="loginUser" placeholder="Masukkan username..." autocomplete="off">
+                        <svg class="input-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Password</label>
+                    <div class="login-input-wrapper">
+                        <input type="password" id="loginPass" placeholder="Masukkan password..." onkeyup="checkCaps(event)">
+                        <svg class="input-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        
+                        <button type="button" class="btn-eye" onclick="togglePassVisibility()" title="Tampilkan/Sembunyikan">
+                            <svg id="eyeIcon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        </button>
+                    </div>
+                    <div id="capsWarn" class="caps-warning">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                        Caps Lock Aktif!
+                    </div>
+                </div>
+
+                <div class="login-options">
+                    <label class="custom-checkbox">
+                        <input type="checkbox" id="rememberMe">
+                        <span class="checkmark"></span>
+                        Ingat Sesi Saya
+                    </label>
+                </div>
+
+                <button class="btn-download" style="margin-bottom: 16px;" id="btnLogin" onclick="prosesLogin()">
+                    <span id="btnLoginText">Masuk ke Panel</span>
+                    <svg id="btnLoginIcon" viewBox="0 0 24 24" style="width: 18px; height: 18px;"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </button>
+
+                <p style="text-align: center; font-size: 11px; color: var(--text-muted); font-weight: 500;">
+                    DOXIT Studio • Private Panel
+                </p>
+            </div>
+        </div>
+
+        <!-- ================= HALAMAN HOME ================= -->
+        <div id="page-home" class="page-section">
+            <div class="header">
+                <div class="logo-area">
+                    <div class="logo-icon">D</div>
+                    <div class="logo-text"><h1>DOXIT</h1><p>DOWNLOADER</p></div>
+                </div>
+            </div>
+
+            <!-- WIDGET JAM & TANGGAL REALTIME -->
+            <div class="time-widget glass-card">
+                <div class="clock-display">
+                    <span class="clock-date" id="liveDate">KAMIS, 05 NOV 2026</span>
+                    <span class="clock-time" id="liveTime">00:00:00 WIB</span>
+                </div>
+                <div class="status-pill">
+                    <span class="status-dot"></span>
+                    ONLINE
+                </div>
+            </div>
+
+            <!-- TAB SELECTOR -->
+            <div class="tab-selector glass-card">
+                <button class="tab-btn active tiktok" id="tab-tiktok" onclick="gantiPlatform('tiktok')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                    </svg>
+                    <span>TikTok</span>
+                </button>
+
+                <button class="tab-btn spotify" id="tab-spotify" onclick="gantiPlatform('spotify')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.622.622 0 0 1-.857.207c-2.348-1.435-5.304-1.76-8.785-.964a.622.622 0 1 1-.277-1.215c3.809-.87 7.077-.496 9.712 1.115a.623.623 0 0 1 .207.857zm1.223-2.723a.78.78 0 0 1-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166A.78.78 0 0 1 6.3 11.4c3.636-1.103 8.161-.569 11.252 1.33a.78.78 0 0 1 .257 1.072zm.105-2.835c-3.223-1.914-8.54-2.09-11.61-1.156a.935.935 0 1 1-.543-1.79c3.532-1.072 9.404-.865 13.115 1.338a.936.936 0 0 1-.962 1.608z"/>
+                    </svg>
+                    <span>Spotify</span>
+                </button>
+
+                <button class="tab-btn alightmotion" id="tab-alightmotion" onclick="gantiPlatform('alightmotion')">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke-linecap="round">
+                        <path d="M12 3a9 9 0 0 1 9 9c0 4.97-4.03 9-9 9s-9-4.03-9-9c0-3.31 1.79-6.2 4.5-7.75"></path>
+                        <path d="M12 7a5 5 0 0 1 5 5c0 2.76-2.24 5-5 5s-5-2.24-5-5c0-1.84 1-3.45 2.5-4.3"></path>
+                        <path d="M12 10.5a1.5 1.5 0 1 1-1.5 1.5"></path>
+                    </svg>
+                    <span>AM</span>
+                </button>
+            </div>
+
+            <!-- FITUR & AREA KHUSUS TIKTOK -->
+            <div id="tiktokSpecialArea" style="display: flex; flex-direction: column;">
+                
+                <div class="platform-banner tiktok glass-card">
+                    <p>Download postingan TikTok (Video No WM Playable atau Slide Foto + MP3).</p>
+                </div>
+
+                <div class="process-card glass-card">
+                    <div class="card-header-group">
+                        <h3>TikTok Post Downloader</h3>
+                    </div>
+                    <p class="card-desc-text">Masukkan link postingan TikTok (Video atau Slide Foto) untuk diambil No Watermark & MP3-nya.</p>
+                    
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label style="font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 6px; display: block;">LINK POSTINGAN TIKTOK</label>
+                        <div class="input-box" style="margin-bottom: 14px;">
+                            <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                            <input type="text" id="tiktokUrlInput" placeholder="https://vt.tiktok.com/...">
+                        </div>
+                    </div>
+
+                    <button class="btn-download btn-purple-vip" id="btnProcessTikTok" onclick="handleDownloadTikTok()">
+                        <span>Proses Link TikTok</span>
+                    </button>
+                </div>
+
+                <!-- TERMINAL CONSOLE LOG UNTUK GENERATE LINK TIKTOK -->
+                <div class="console-card glass-card">
+                    <div class="console-header">
+                        <div class="console-title-group">
+                            <div class="console-dots">
+                                <span class="console-dot red"></span>
+                                <span class="console-dot yellow"></span>
+                                <span class="console-dot green"></span>
+                            </div>
+                            <span class="console-title">INSTALL_PROCESS.console</span>
+                        </div>
+                        <div class="console-actions">
+                            <button class="btn-console" onclick="copyConsoleLog()">Salin</button>
+                            <button class="btn-console" onclick="clearConsoleLog()">Hapus</button>
+                        </div>
+                    </div>
+                    <div class="console-body">
+                        <pre id="consoleOutputTikTok">[SYSTEM] Process Terminal initialized. Ready for processing...</pre>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- FITUR & AREA KHUSUS SPOTIFY -->
+            <div id="spotifySpecialArea" style="display: none; flex-direction: column;">
+                
+                <div class="platform-banner spotify glass-card">
+                    <p>Proses link lagu Spotify untuk mengekstraksi file audio MP3 & Foto Cover.</p>
+                </div>
+
+                <div class="process-card glass-card">
+                    <div class="card-header-group">
+                        <h3>Process Link Spotify</h3>
+                    </div>
+                    <p class="card-desc-text">Tempelkan link lagu/track Spotify di bawah untuk memproses dan mengambil MP3 beserta gambar cover-nya.</p>
+                    
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label style="font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 6px; display: block;">LINK LAGU SPOTIFY</label>
+                        <div class="input-box" style="margin-bottom: 14px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                            <input type="text" id="spotifyUrlInput" placeholder="https://open.spotify.com/track/...">
+                        </div>
+                    </div>
+
+                    <button class="btn-download btn-green-vip" id="btnProcessSpotify" onclick="handleDownloadSpotify()">
+                        <span>Proses Link Lagu</span>
+                    </button>
+                </div>
+
+                <!-- TERMINAL CONSOLE LOG UNTUK GENERATE LINK SPOTIFY -->
+                <div class="console-card glass-card">
+                    <div class="console-header">
+                        <div class="console-title-group">
+                            <div class="console-dots">
+                                <span class="console-dot red"></span>
+                                <span class="console-dot yellow"></span>
+                                <span class="console-dot green"></span>
+                            </div>
+                            <span class="console-title">INSTALL_PROCESS.console</span>
+                        </div>
+                        <div class="console-actions">
+                            <button class="btn-console" onclick="copyConsoleLog()">Salin</button>
+                            <button class="btn-console" onclick="clearConsoleLog()">Hapus</button>
+                        </div>
+                    </div>
+                    <div class="console-body">
+                        <pre id="consoleOutputSpotify">[SYSTEM] Process Terminal initialized. Ready for processing...</pre>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- TAMPILAN 2-STEP ALIGHT MOTION (KHUSUS TAB AM) -->
+            <div id="amVerifyArea" style="display: none; flex-direction: column; gap: 16px;">
+                
+                <div class="glass-card" style="border-radius: 24px; padding: 20px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                        <span class="step-num">1</span>
+                        <h3 style="font-size: 15px; font-weight: 700; color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif;">Kirim Tautan Ajaib</h3>
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4; margin-bottom: 14px;">
+                        Masukkan email target. Kami akan mengirimkan tautan verifikasi ke email tersebut.
+                    </p>
+                    
+                    <div class="input-box" style="margin-bottom: 12px;">
+                        <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                        <input type="email" id="amTargetEmail" placeholder="contoh@gmail.com">
+                    </div>
+
+                    <button class="btn-download btn-green-vip" onclick="kirimTautanAjaib()">
+                        <span>Kirim Tautan</span>
+                    </button>
+                </div>
+
+                <div class="glass-card" style="border-radius: 24px; padding: 20px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                        <span class="step-num">2</span>
+                        <h3 style="font-size: 15px; font-weight: 700; color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif;">Verifikasi Akun</h3>
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4; margin-bottom: 14px;">
+                        Buka email kamu, salin tautan verifikasi, lalu tempelkan di kolom bawah ini.
+                    </p>
+
+                    <div class="input-group">
+                        <label style="font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 6px; display: block;">Tautan Verifikasi</label>
+                        <div class="input-box" style="margin-bottom: 12px;">
+                            <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                            <input type="text" id="amVerifyLink" placeholder="https://alightcreative.page.link/...">
+                        </div>
+                    </div>
+
+                    <button class="btn-download btn-blue-vip" onclick="verifikasiDanAktifkanVIP()">
+                        <span>Verifikasi & Aktifkan VIP</span>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- ANIMASI KARTU PROSES EXTRACTION -->
+            <div id="processingCard" class="processing-card glass-card">
+                <div class="proc-spinner"></div>
+                <div class="proc-title" id="procTitle">Mengekstrak Link TikTok...</div>
+                <div class="proc-sub">Mohon tunggu sebentar</div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="procProgress"></div>
+                </div>
+            </div>
+
+            <!-- HASIL MEDIA & DETAIL METADATA -->
+            <div class="media-card glass-card" id="mediaPlayer">
+                <div id="playerContainer"></div>
+                
+                <div class="meta-grid">
+                    <div class="meta-chip">
+                        <span>Waktu Ekstrak</span>
+                        <span id="metaTime">-</span>
+                    </div>
+                    <div class="meta-chip">
+                        <span>Format Media</span>
+                        <span id="metaFormat">MP4 HD</span>
+                    </div>
+                    <div class="meta-chip">
+                        <span>Platform</span>
+                        <span id="metaPlatform">TikTok</span>
+                    </div>
+                    <div class="meta-chip">
+                        <span>Status File</span>
+                        <span style="color: #4ade80;">Ready</span>
+                    </div>
+                </div>
+
+                <div class="media-footer">
+                    <div class="media-info-text">
+                        <h4 id="mediaTitle">-</h4>
+                        <p id="mediaAuthor">-</p>
+                    </div>
+                    <a href="#" id="btnSaveFile" class="btn-save" download>Simpan File</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= HALAMAN HISTORY ================= -->
+        <div id="page-history" class="page-section">
+            <div class="header">
+                <div class="logo-text"><h1>Riwayat</h1></div>
+                <button class="btn-icon-danger" onclick="hapusHistory()" title="Hapus Riwayat">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+            </div>
+            <div class="download-list" id="historyList"></div>
+        </div>
+
+    </div>
+
+    <!-- FLOATING BOTTOM NAV -->
+    <div class="bottom-nav glass-card" id="bottomNav">
+        <button class="nav-item active" id="nav-home" onclick="pindahHalaman('page-home', this)">
+            <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            Home
+        </button>
+        <button class="nav-item" id="nav-history" onclick="pindahHalaman('page-history', this)">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 16 14"></polyline></svg>
+            Riwayat
+        </button>
+        <button class="nav-item" id="nav-logout" onclick="prosesLogout()">
+            <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            Keluar
+        </button>
+    </div>
+
+    <!-- SCRIPT TAMPILAN UTAMA -->
+    <script>
+        function safeGetStorage(key, defaultVal = null) {
+            try { return localStorage.getItem(key) || defaultVal; } catch(e) { return defaultVal; }
+        }
+        function safeSetStorage(key, val) {
+            try { localStorage.setItem(key, val); } catch(e) {}
+        }
+        function safeRemoveStorage(key) {
+            try { localStorage.removeItem(key); } catch(e) {}
+        }
+
+        // ================= JAM & TANGGAL REALTIME =================
+        function updateClock() {
+            const now = new Date();
+            const days = ['MINGGU', 'SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU'];
+            const months = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGU', 'SEP', 'OKT', 'NOV', 'DES'];
+
+            const dayName = days[now.getDay()];
+            const dayNum = String(now.getDate()).padStart(2, '0');
+            const monthName = months[now.getMonth()];
+            const year = now.getFullYear();
+
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+
+            const liveDateEl = document.getElementById('liveDate');
+            const liveTimeEl = document.getElementById('liveTime');
+            if (liveDateEl) liveDateEl.innerText = `${dayName}, ${dayNum} ${monthName} ${year}`;
+            if (liveTimeEl) liveTimeEl.innerText = `${hours}:${minutes}:${seconds} WIB`;
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // ================= ANIMASI CANVAS KONSTELASI =================
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas ? canvas.getContext('2d') : null;
+        let particles = [];
+
+        function resizeCanvas() {
+            if (!canvas) return;
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function createParticles() {
+            if (!canvas) return;
+            particles = [];
+            const count = Math.floor((canvas.width * canvas.height) / 18000);
+            for(let i = 0; i < count; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 1.8 + 0.6,
+                    vx: (Math.random() - 0.5) * 0.4,
+                    vy: (Math.random() - 0.5) * 0.4,
+                    alpha: Math.random() * 0.6 + 0.2
+                });
+            }
+        }
+        createParticles();
+
+        function drawParticles() {
+            if (!ctx || !canvas) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const rgbColor = getComputedStyle(document.body).getPropertyValue('--particle-color').trim() || '168, 85, 247';
+
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    let dx = particles[i].x - particles[j].x;
+                    let dy = particles[i].y - particles[j].y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 95) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(${rgbColor}, ${0.15 * (1 - dist / 95)})`;
+                        ctx.lineWidth = 0.8;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+
+                if (p.x < 0) p.x = canvas.width;
+                if (p.x > canvas.width) p.x = 0;
+                if (p.y < 0) p.y = canvas.height;
+                if (p.y > canvas.height) p.y = 0;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${rgbColor}, ${p.alpha})`;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = `rgba(${rgbColor}, 0.8)`;
+                ctx.fill();
+            });
+
+            requestAnimationFrame(drawParticles);
+        }
+        if (ctx) drawParticles();
+
+        // ================= LOGIKA LOGIN & INITIALIZATION =================
+        const USER_VALID = "admin";
+        const PASS_VALID = "12345";
+        
+        let currentPlatform = 'tiktok';
+        let failedAttempts = parseInt(safeGetStorage('doxit_failedAttempts', '0'));
+        let isLocked = false;
+        let cooldownTimer = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedUser = safeGetStorage('doxit_savedUser');
+            if (savedUser) {
+                const userEl = document.getElementById('loginUser');
+                const remEl = document.getElementById('rememberMe');
+                if (userEl) userEl.value = savedUser;
+                if (remEl) remEl.checked = true;
+            }
+
+            const isLoggedIn = safeGetStorage('doxit_loggedIn');
+            if (isLoggedIn === 'true') {
+                tampilkanApp();
+            } else {
+                tampilkanLogin();
+            }
+
+            const lockUntil = safeGetStorage('doxit_lockUntil');
+            if (lockUntil && Date.now() < parseInt(lockUntil)) {
+                const remainingSecs = Math.ceil((parseInt(lockUntil) - Date.now()) / 1000);
+                mulaiCooldownLock(remainingSecs);
+            }
+
+            renderHistory();
+        });
+
+        function checkCaps(event) {
+            const capsWarn = document.getElementById('capsWarn');
+            if (capsWarn) {
+                capsWarn.style.display = (event.getModifierState && event.getModifierState('CapsLock')) ? 'flex' : 'none';
+            }
+        }
+
+        function togglePassVisibility() {
+            const input = document.getElementById('loginPass');
+            const eyeIcon = document.getElementById('eyeIcon');
+            if (!input || !eyeIcon) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                eyeIcon.innerHTML = `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>`;
+            } else {
+                input.type = 'password';
+                eyeIcon.innerHTML = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>`;
+            }
+        }
+
+        function tampilkanLogin() {
+            document.body.classList.add('is-login');
+            document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+            const loginPage = document.getElementById('page-login');
+            if (loginPage) loginPage.classList.add('active');
+        }
+
+        function tampilkanApp() {
+            document.body.classList.remove('is-login');
+            document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+            const homePage = document.getElementById('page-home');
+            const bNav = document.getElementById('bottomNav');
+            if (homePage) homePage.classList.add('active');
+            if (bNav) bNav.style.display = 'flex';
+            
+            const nHome = document.getElementById('nav-home');
+            const nHist = document.getElementById('nav-history');
+            if (nHome) nHome.classList.add('active');
+            if (nHist) nHist.classList.remove('active');
+        }
+
+        /* ANIMASI PREMIUM FULLSCREEN OVERLAY SPLASH LOADER 0% - 100% */
+        function prosesLogin() {
+            if (isLocked) return;
+
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value.trim();
+
+            if (u === USER_VALID && p === PASS_VALID) {
+                failedAttempts = 0;
+                safeRemoveStorage('doxit_failedAttempts');
+                safeRemoveStorage('doxit_lockUntil');
+
+                if (document.getElementById('rememberMe').checked) {
+                    safeSetStorage('doxit_savedUser', u);
+                } else {
+                    safeRemoveStorage('doxit_savedUser');
+                }
+
+                // Sembunyikan form login & tampilkan Fullscreen Splash Loader
+                document.querySelectorAll('.page-section').forEach(page => page.classList.remove('active'));
+                
+                const splash = document.getElementById('splashLoader');
+                const splashBar = document.getElementById('splashBar');
+                const splashPercent = document.getElementById('splashPercent');
+                const splashStatus = document.getElementById('splashStatus');
+
+                splash.classList.add('show');
+
+                let progress = 0;
+                const statusTexts = [
+                    "AUTHENTICATING CREDENTIALS...",
+                    "DECRYPTING SECURITY TOKENS...",
+                    "LOADING USER ENVIRONMENT...",
+                    "INITIALIZING SYSTEM DASHBOARD...",
+                    "ACCESS GRANTED!"
+                ];
+
+                const interval = setInterval(() => {
+                    progress += 1;
+                    if (splashBar) splashBar.style.width = progress + '%';
+                    if (splashPercent) splashPercent.innerText = progress + '%';
+
+                    if (progress < 25) splashStatus.innerText = statusTexts[0];
+                    else if (progress < 50) splashStatus.innerText = statusTexts[1];
+                    else if (progress < 75) splashStatus.innerText = statusTexts[2];
+                    else if (progress < 95) splashStatus.innerText = statusTexts[3];
+                    else splashStatus.innerText = statusTexts[4];
+
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        setTimeout(() => {
+                            splash.classList.remove('show');
+                            safeSetStorage('doxit_loggedIn', 'true');
+                            tampilkanApp();
+                            showToast('Login Berhasil!');
+                        }, 300);
+                    }
+                }, 35); // Durasi loading 0-100% tepat 3.5 detik berjalan ultra smooth
+
+            } else {
+                failedAttempts++;
+                safeSetStorage('doxit_failedAttempts', failedAttempts.toString());
+
+                if (failedAttempts >= 3) {
+                    const lockExpiry = Date.now() + (30 * 1000);
+                    safeSetStorage('doxit_lockUntil', lockExpiry.toString());
+                    mulaiCooldownLock(30);
+                } else {
+                    showToast(`Sisa Percobaan: ${3 - failedAttempts}`, 'error');
+                }
+            }
+        }
+
+        function mulaiCooldownLock(seconds) {
+            isLocked = true;
+            const btn = document.getElementById('btnLogin');
+            const btnText = document.getElementById('btnLoginText');
+            const btnIcon = document.getElementById('btnLoginIcon');
+            
+            if (btn) btn.disabled = true;
+            if (btnIcon) btnIcon.style.display = 'none';
+
+            let remaining = seconds;
+            showToast(`Sistem Terkunci! Tunggu ${remaining}s`, 'error');
+            if (btnText) btnText.innerText = `Kunci Otomatis (${remaining}s)`;
+
+            if (cooldownTimer) clearInterval(cooldownTimer);
+            cooldownTimer = setInterval(() => {
+                remaining--;
+                if (remaining > 0) {
+                    if (btnText) btnText.innerText = `Kunci Otomatis (${remaining}s)`;
+                } else {
+                    clearInterval(cooldownTimer);
+                    isLocked = false;
+                    failedAttempts = 0;
+                    safeRemoveStorage('doxit_failedAttempts');
+                    safeRemoveStorage('doxit_lockUntil');
+                    if (btn) btn.disabled = false;
+                    if (btnIcon) btnIcon.style.display = 'inline-block';
+                    if (btnText) btnText.innerText = 'Masuk ke Panel';
+                    showToast('Silakan coba login kembali');
+                }
+            }, 1000);
+        }
+
+        function prosesLogout() {
+            if (confirm('Yakin ingin keluar?')) {
+                safeRemoveStorage('doxit_loggedIn');
+                tampilkanLogin();
+                showToast('Berhasil keluar');
+            }
+        }
+
+        // ================= LOGIKA TERMINAL CONSOLE UNTUK PROSES GENERATE LINK =================
+        function getActiveConsoleOutput() {
+            if (currentPlatform === 'tiktok') return document.getElementById('consoleOutputTikTok');
+            if (currentPlatform === 'spotify') return document.getElementById('consoleOutputSpotify');
+            return null;
+        }
+
+        function addConsoleLog(text) {
+            const output = getActiveConsoleOutput();
+            if (!output) return;
+            const time = new Date().toLocaleTimeString('id-ID');
+            output.innerText += `\n[${time}] ${text}`;
+            const container = output.parentElement;
+            if (container) container.scrollTop = container.scrollHeight;
+        }
+
+        function copyConsoleLog() {
+            const output = getActiveConsoleOutput();
+            if (!output) return;
+            navigator.clipboard.writeText(output.innerText).then(() => {
+                showToast('Log terminal berhasil disalin!');
+            }).catch(() => {
+                showToast('Gagal menyalin log terminal', 'error');
+            });
+        }
+
+        function clearConsoleLog() {
+            const output = getActiveConsoleOutput();
+            if (output) {
+                output.innerText = '[SYSTEM] Process Terminal initialized. Ready for processing...';
+                showToast('Log terminal dibersihkan!');
+            }
+        }
+
+        // ================= GANTI PLATFORM (SMOOTH TRANSITION) =================
+        function gantiPlatform(platform) {
+            currentPlatform = platform;
+            
+            document.getElementById('tab-tiktok').classList.remove('active');
+            document.getElementById('tab-spotify').classList.remove('active');
+            document.getElementById('tab-alightmotion').classList.remove('active');
+
+            document.body.classList.remove('theme-tiktok', 'theme-spotify', 'theme-alightmotion');
+
+            const tiktokArea = document.getElementById('tiktokSpecialArea');
+            const spotifyArea = document.getElementById('spotifySpecialArea');
+            const amArea = document.getElementById('amVerifyArea');
+
+            if (platform === 'spotify') {
+                document.getElementById('tab-spotify').classList.add('active');
+                document.body.classList.add('theme-spotify');
+                
+                tiktokArea.style.display = 'none';
+                amArea.style.display = 'none';
+                spotifyArea.style.display = 'flex';
+            } else if (platform === 'alightmotion') {
+                document.getElementById('tab-alightmotion').classList.add('active');
+                document.body.classList.add('theme-alightmotion');
+                
+                tiktokArea.style.display = 'none';
+                spotifyArea.style.display = 'none';
+                amArea.style.display = 'flex';
+            } else {
+                document.getElementById('tab-tiktok').classList.add('active');
+                document.body.classList.add('theme-tiktok');
+                
+                spotifyArea.style.display = 'none';
+                amArea.style.display = 'none';
+                tiktokArea.style.display = 'flex';
+            }
+
+            document.getElementById('processingCard').style.display = 'none';
+            document.getElementById('mediaPlayer').style.display = 'none';
+        }
+
+        // ================= NAVIGASI HALAMAN =================
+        function pindahHalaman(pageId, btn) {
+            document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+            const targetPage = document.getElementById(pageId);
+            if (targetPage) targetPage.classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+        }
+
+        // ================= PREMIUM TOAST SYSTEM =================
+        let toastT;
+        function showToast(msg, type = 'success') {
+            const t = document.getElementById('toast');
+            const msgEl = document.getElementById('toastMsg');
+            const iconEl = document.getElementById('toastIcon');
+            if (!t || !msgEl || !iconEl) return;
+            
+            msgEl.innerText = msg;
+            
+            if (type === 'error') {
+                t.className = 'toast error';
+                iconEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12"></line><line x1="12" y1="16" x2="12.01" y2="17"></line></svg>`;
+            } else {
+                t.className = 'toast';
+                iconEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+            }
+            
+            setTimeout(() => t.classList.add('show'), 10);
+            clearTimeout(toastT);
+            toastT = setTimeout(() => { t.classList.remove('show'); }, 3000);
+        }
+
+        // ================= PROSES GENERATE LINK TIKTOK =================
+        function bersihkanNamaFile(judul, platform) {
+            if (!judul) return `file_${Date.now()}`;
+            let nama = judul.replace(/https?:\/\/[^\s]+/g, '').replace(/#[^\s]+/g, '').replace(/[\/\\:*?"<>|]/g, '').trim().substring(0, 50).trim();
+            let ext = '.mp4';
+            if (platform === 'spotify') ext = '.mp3';
+            if (platform === 'alightmotion') ext = '.preset';
+            return (nama || `media_${platform}`) + ext;
+        }
+
+        async function handleDownloadTikTok() {
+            const urlEl = document.getElementById('tiktokUrlInput');
+            const url = urlEl ? urlEl.value.trim() : '';
+            const btn = document.getElementById('btnProcessTikTok');
+            const player = document.getElementById('mediaPlayer');
+            const procCard = document.getElementById('processingCard');
+            const procTitle = document.getElementById('procTitle');
+            const procProgress = document.getElementById('procProgress');
+            const consoleOutput = document.getElementById('consoleOutputTikTok');
+            
+            if (!url) return showToast('Masukkan link TikTok terlebih dahulu!', 'error');
+
+            if (!url.includes('tiktok.com')) {
+                if (consoleOutput) consoleOutput.innerText = `[ERROR] URL invalid: ${url}\n[SYSTEM] Gagal memproses, masukkan link tiktok.com`;
+                return showToast('Link bukan domain TikTok!', 'error');
+            }
+
+            if (btn) btn.disabled = true;
+            if (player) player.style.display = 'none';
+
+            if (consoleOutput) consoleOutput.innerText = `[INIT] Target URL accepted: ${url}\n[START] Memulai ekstraksi payload TikTok...`;
+
+            if (procTitle) procTitle.innerText = `Mengekstrak Link TIKTOK...`;
+            if (procProgress) procProgress.style.width = '10%';
+            if (procCard) procCard.style.display = 'flex';
+
+            let curProgress = 10;
+            const logSteps = [
+                '[FETCH] Menghubungkan ke API server TikTok...',
+                '[PARSER] Menghilangkan watermark dari video...',
+                '[DECODE] Mengekstrak file audio MP3 & Slide HD...',
+                '[FINAL] Menyusun direct download link...'
+            ];
+            let stepIdx = 0;
+
+            const progressTimer = setInterval(() => {
+                if (curProgress < 85) {
+                    curProgress += Math.floor(Math.random() * 12) + 6;
+                    if (procProgress) procProgress.style.width = `${curProgress}%`;
+                    if (stepIdx < logSteps.length) {
+                        addConsoleLog(logSteps[stepIdx]);
+                        stepIdx++;
+                    }
+                }
+            }, 250);
+
+            try {
+                const endpoint = `/api/tiktok?url=${encodeURIComponent(url)}`;
+                const res = await fetch(endpoint);
+                const data = await res.json();
+
+                clearInterval(progressTimer);
+                if (procProgress) procProgress.style.width = '100%';
+
+                setTimeout(() => {
+                    if (procCard) procCard.style.display = 'none';
+
+                    if (data.success) {
+                        addConsoleLog(`[SUCCESS] Direct link berhasil di-generate!`);
+                        addConsoleLog(`[METADATA] Title: "${data.title || 'TikTok Media'}" | Author: @${data.author || 'User'}`);
+                        tampilkanHasil('tiktok', data);
+                        simpanHistory('tiktok', data);
+                        showToast('Berhasil diekstrak!');
+                    } else {
+                        addConsoleLog(`[FAILED] Gagal generate link: ${data.error || 'Server error'}`);
+                        showToast(data.error || 'Gagal ekstrak data', 'error');
+                    }
+                }, 350);
+
+            } catch (err) {
+                clearInterval(progressTimer);
+                if (procCard) procCard.style.display = 'none';
+                addConsoleLog(`[ERROR] Network/API Error: ${err.message}`);
+                showToast(err.message, 'error');
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        // ================= PROSES GENERATE LINK SPOTIFY =================
+        async function handleDownloadSpotify() {
+            const spotifyUrlEl = document.getElementById('spotifyUrlInput');
+            const url = spotifyUrlEl ? spotifyUrlEl.value.trim() : '';
+            const btn = document.getElementById('btnProcessSpotify');
+            const player = document.getElementById('mediaPlayer');
+            const procCard = document.getElementById('processingCard');
+            const procTitle = document.getElementById('procTitle');
+            const procProgress = document.getElementById('procProgress');
+            const consoleOutput = document.getElementById('consoleOutputSpotify');
+            
+            if (!url) return showToast('Masukkan link Spotify terlebih dahulu!', 'error');
+
+            if (!url.includes('spotify.com')) {
+                if (consoleOutput) consoleOutput.innerText = `[ERROR] URL invalid: ${url}\n[SYSTEM] Gagal memproses, masukkan link open.spotify.com`;
+                return showToast('Link bukan domain Spotify!', 'error');
+            }
+
+            if (btn) btn.disabled = true;
+            if (player) player.style.display = 'none';
+
+            if (consoleOutput) consoleOutput.innerText = `[INIT] Target track accepted: ${url}\n[START] Memulai pencarian metadata Spotify...`;
+
+            if (procTitle) procTitle.innerText = `Mengekstrak Link SPOTIFY...`;
+            if (procProgress) procProgress.style.width = '10%';
+            if (procCard) procCard.style.display = 'flex';
+
+            let curProgress = 10;
+            const logSteps = [
+                '[API] Mengambil metadata track & Cover Art...',
+                '[SEARCH] Matching Audio Stream dengan Server HD...',
+                '[CONVERT] Rendering stream ke MP3 320kbps...',
+                '[FINAL] Mempersiapkan URL download cepat...'
+            ];
+            let stepIdx = 0;
+
+            const progressTimer = setInterval(() => {
+                if (curProgress < 85) {
+                    curProgress += Math.floor(Math.random() * 12) + 6;
+                    if (procProgress) procProgress.style.width = `${curProgress}%`;
+                    if (stepIdx < logSteps.length) {
+                        addConsoleLog(logSteps[stepIdx]);
+                        stepIdx++;
+                    }
+                }
+            }, 250);
+
+            try {
+                const endpoint = `/api/spotify?url=${encodeURIComponent(url)}`;
+                const res = await fetch(endpoint);
+                const data = await res.json();
+
+                clearInterval(progressTimer);
+                if (procProgress) procProgress.style.width = '100%';
+
+                setTimeout(() => {
+                    if (procCard) procCard.style.display = 'none';
+
+                    if (data.success) {
+                        addConsoleLog(`[SUCCESS] File MP3 & Cover Art berhasil di-generate!`);
+                        addConsoleLog(`[METADATA] Track: "${data.title || 'Track'}" | Artist: ${data.artist || 'Artist'}`);
+                        tampilkanHasil('spotify', data);
+                        simpanHistory('spotify', data);
+                        showToast('Berhasil diekstrak!');
+                    } else {
+                        addConsoleLog(`[FAILED] Gagal generate link: ${data.error || 'Server error'}`);
+                        showToast(data.error || 'Gagal ekstrak data', 'error');
+                    }
+                }, 350);
+
+            } catch (err) {
+                clearInterval(progressTimer);
+                if (procCard) procCard.style.display = 'none';
+                addConsoleLog(`[ERROR] Network/API Error: ${err.message}`);
+                showToast(err.message, 'error');
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        function tampilkanHasil(platform, data) {
+            const playerSection = document.getElementById('mediaPlayer');
+            const playerContainer = document.getElementById('playerContainer');
+            const btnSave = document.getElementById('btnSaveFile');
+            
+            document.getElementById('mediaTitle').innerText = data.title || 'Tanpa Judul';
+            document.getElementById('mediaAuthor').innerText = (platform === 'tiktok' ? data.author : (platform === 'spotify' ? data.artist : 'Creator AM')) || 'Unknown';
+            
+            const now = new Date();
+            const timeFormatted = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} WIB`;
+            document.getElementById('metaTime').innerText = timeFormatted;
+            document.getElementById('metaFormat').innerText = platform === 'tiktok' ? 'MP4 HD' : (platform === 'spotify' ? 'MP3 (320kbps)' : 'PRESET FILE');
+            document.getElementById('metaPlatform').innerText = platform.toUpperCase();
+
+            const filename = bersihkanNamaFile(data.title, platform);
+
+            if (platform === 'tiktok' && data.photos && data.photos.length > 0) {
+                playerContainer.innerHTML = `<img src="${data.photos[0]}" style="width:100%; border-radius:18px; max-height:220px; object-fit:cover;">`;
+                btnSave.href = data.photos[0];
+                btnSave.setAttribute('download', filename.replace('.mp4', '.jpg'));
+            } else if (platform === 'tiktok') {
+                playerContainer.innerHTML = `<video src="${data.video_url}" controls autoplay></video>`;
+                btnSave.href = `${data.video_url}&filename=${encodeURIComponent(filename)}`;
+                btnSave.removeAttribute('download'); 
+            } else if (platform === 'spotify') {
+                playerContainer.innerHTML = `<audio src="${data.audio_url}" controls autoplay style="width:100%;"></audio>`;
+                btnSave.href = `${data.audio_url}&filename=${encodeURIComponent(filename)}`;
+                btnSave.removeAttribute('download');
+            } else {
+                playerContainer.innerHTML = `<div style="padding:16px; background:rgba(6, 182, 212, 0.15); border-radius:14px; text-align:center; color:#67e8f9; font-weight:600; font-size:13px;">File Preset Siap Di-import ke Alight Motion</div>`;
+                btnSave.href = data.file_url || '#';
+                btnSave.setAttribute('download', filename);
+            }
+
+            if (playerSection) playerSection.style.display = 'flex';
+        }
+
+        // ================= HISTORY DI TAB RIWAYAT =================
+        function simpanHistory(platform, data) {
+            let history = JSON.parse(safeGetStorage('doxit_history', '[]'));
+            const now = new Date();
+            const jamStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            const tglStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+            
+            history.unshift({
+                id: Date.now(),
+                platform: platform,
+                title: data.title || 'Tanpa Judul',
+                thumb: data.thumbnail || 'https://via.placeholder.com/60/333/fff?text=DOXIT',
+                type: platform === 'tiktok' ? 'VIDEO' : (platform === 'spotify' ? 'MP3' : 'PRESET'),
+                dateTime: `${jamStr} WIB • ${tglStr}`
+            });
+            if (history.length > 20) history.pop(); 
+            safeSetStorage('doxit_history', JSON.stringify(history));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const history = JSON.parse(safeGetStorage('doxit_history', '[]'));
+            const historyList = document.getElementById('historyList');
+
+            if (!historyList) return;
+
+            if (history.length === 0) {
+                historyList.innerHTML = `<p style="color:var(--text-muted); font-size:13px; text-align:center; padding:20px 0; font-weight:400;">Belum ada unduhan.</p>`;
+                return;
+            }
+
+            historyList.innerHTML = history.map(item => `
+                <div class="download-item glass-card">
+                    <img src="${item.thumb}" class="dl-thumb" onerror="this.src='https://via.placeholder.com/60/333/fff?text=IMG'">
+                    <div class="dl-info">
+                        <h4>${item.title}</h4>
+                        <p>${item.dateTime || item.date || 'Tersimpan'}</p>
+                    </div>
+                    <span class="dl-badge ${item.platform}">${item.type}</span>
+                </div>
+            `).join('');
+        }
+
+        function hapusHistory() {
+            if (confirm('Hapus semua riwayat?')) {
+                safeRemoveStorage('doxit_history');
+                renderHistory();
+                showToast('Riwayat dibersihkan');
+            }
+        }
+    </script>
+
+    <!-- INTEGRASI LOGIKA ALIGHT MOTION DARI ./api/am.js -->
+    <script type="module">
+        import { amSendLink, amVerifyLink } from './api/am.js';
+
+        // 1. Kirim Tautan Ajaib
+        window.kirimTautanAjaib = async function() {
+            const emailInput = document.getElementById('amTargetEmail');
+            const email = emailInput ? emailInput.value.trim() : '';
+
+            if (!email || !email.includes('@')) {
+                return showToast('Masukkan email target yang valid!', 'error');
+            }
+
+            showToast('Mengirim link verifikasi...');
+
+            try {
+                await amSendLink(email);
+                showToast('Tautan verifikasi berhasil dikirim!');
+                
+                const verifyInput = document.getElementById('amVerifyLink');
+                if (verifyInput) verifyInput.focus();
+            } catch (err) {
+                showToast(err.message || 'Gagal mengirim link', 'error');
+            }
+        };
+
+        // 2. Verifikasi Akun & Aktifkan VIP
+        window.verifikasiDanAktifkanVIP = async function() {
+            const emailInput = document.getElementById('amTargetEmail');
+            const linkInput = document.getElementById('amVerifyLink');
+            const email = emailInput ? emailInput.value.trim() : '';
+            const link = linkInput ? linkInput.value.trim() : '';
+
+            if (!email) {
+                return showToast('Masukkan email target terlebih dahulu!', 'error');
+            }
+            if (!link) {
+                return showToast('Masukkan tautan verifikasi terlebih dahulu!', 'error');
+            }
+
+            const procCard = document.getElementById('processingCard');
+            const procTitle = document.getElementById('procTitle');
+            const procProgress = document.getElementById('procProgress');
+
+            if (procTitle) procTitle.innerText = 'Memverifikasi Tautan AM...';
+            if (procProgress) procProgress.style.width = '20%';
+            if (procCard) procCard.style.display = 'flex';
+
+            let curProgress = 20;
+            const progressTimer = setInterval(() => {
+                if (curProgress < 90) {
+                    curProgress += 15;
+                    if (procProgress) procProgress.style.width = `${curProgress}%`;
+                }
+            }, 150);
+
+            try {
+                const res = await amVerifyLink(email, link);
+
+                clearInterval(progressTimer);
+                if (procProgress) procProgress.style.width = '100%';
+
+                setTimeout(() => {
+                    if (procCard) procCard.style.display = 'none';
+
+                    tampilkanHasil('alightmotion', {
+                        title: 'Alight Motion VIP Active',
+                        author: email,
+                        file_url: '#'
+                    });
+                    
+                    simpanHistory('alightmotion', {
+                        title: `AM VIP (${email})`,
+                        thumbnail: 'https://via.placeholder.com/60/06b6d4/fff?text=AM'
+                    });
+
+                    showToast('Verifikasi Berhasil & VIP Aktif!');
+                }, 300);
+
+            } catch (err) {
+                clearInterval(progressTimer);
+                if (procCard) procCard.style.display = 'none';
+                showToast(err.message || 'Verifikasi gagal!', 'error');
+            }
+        };
+    </script>
+</body>
+</html>
